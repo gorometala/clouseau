@@ -145,6 +145,12 @@ class IndexService(ctx: ServiceContext[IndexServiceArgs]) extends Service(ctx) w
       'ok
     case 'info =>
       ('ok, getInfo)
+    case 'create_snapshot =>
+      createSnapshot()
+    case 'list_snapshots =>
+      listSnapshots()
+    case DeleteSnapshotMsg(generation: Long) =>
+      deleteSnapshot(generation)
   }
 
   override def handleCast(msg: Any) = msg match {
@@ -841,6 +847,38 @@ class IndexService(ctx: ServiceContext[IndexServiceArgs]) extends Service(ctx) w
       }
   }
 
+  private def createSnapshot() = {
+    val commit = getSnapshotDeletionPolicy().snapshot()
+    ('ok, convertIndexCommit(commit))
+  }
+
+  private def listSnapshots() = {
+    ('ok, getSnapshotDeletionPolicy().getSnapshots().map {
+      commit => convertIndexCommit(commit)
+    }.toList)
+  }
+
+  // Snapshots are ref-counted so we loop here to ensure
+  // we release the snapshot for the given generation.
+  private def deleteSnapshot(generation: Long): Symbol = {
+    var commit: IndexCommit = null
+    do {
+      commit = getSnapshotDeletionPolicy().getIndexCommit(generation)
+      if (commit != null) {
+        getSnapshotDeletionPolicy().release(commit)
+      }
+    } while (commit != null)
+    'ok
+  }
+
+  private def convertIndexCommit(commit: IndexCommit) = {
+    ('commit, commit.getGeneration(), commit.getFileNames().toList)
+  }
+
+  private def getSnapshotDeletionPolicy(): PersistentSnapshotDeletionPolicy = {
+    ctx.args.writer.getConfig().getIndexDeletionPolicy().asInstanceOf[PersistentSnapshotDeletionPolicy]
+  }
+
   private def debug(str: String) {
     IndexService.logger.debug(prefix_name(str))
   }
@@ -889,6 +927,7 @@ object IndexService {
         case Some(analyzer) =>
           val queryParser = new ClouseauQueryParser(version, "default", analyzer)
           val writerConfig = new IndexWriterConfig(version, analyzer)
+          writerConfig.setIndexDeletionPolicy(newSnapshotDeletionPolicy(dir))
           val writer = new IndexWriter(dir, writerConfig)
           ('ok, node.spawnService[IndexService, IndexServiceArgs](IndexServiceArgs(config, path, queryParser, writer)))
         case None =>
@@ -911,6 +950,10 @@ object IndexService {
     val dirClass = Class.forName(dirClassName)
     val dirCtor = dirClass.getConstructor(classOf[File], classOf[LockFactory])
     dirCtor.newInstance(path, lockFactory).asInstanceOf[Directory]
+  }
+
+  private def newSnapshotDeletionPolicy(dir: Directory): PersistentSnapshotDeletionPolicy = {
+    return new PersistentSnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy(), dir)
   }
 
 }
