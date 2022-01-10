@@ -27,8 +27,9 @@ jobs:
         otp-version: 22.3.2
         
     - name: Step 3 - Build with Maven
-      run: mvn -B package --file pom.xml
-           mkdir staging && cp target/*.jar staging
+      run: |
+        mvn -B package --file pom.xml
+        mkdir staging && cp target/*.jar staging
            
     - name: Step 4  - Set up cache for Maven
       uses: actions/cache@v2
