@@ -28,7 +28,7 @@ jobs:
         
     - name: Step 3 - Build with Maven
       run: |
-        mvn -B package --file pom.xml
+        mvn -Dmaven.test.skip=true -B package --file pom.xml
         mkdir staging && cp target/*.jar staging
            
     - name: Step 4  - Set up cache for Maven
