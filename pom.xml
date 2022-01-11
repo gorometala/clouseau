@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.cloudant</groupId>
   <artifactId>clouseau</artifactId>
-  <version>2.21.1-SNAPSHOT</version>
+  <version>2.20.0</version>
   <name>${project.artifactId}</name>
   <description>Full-text indexing for Cloudant</description>
   <inceptionYear>2012</inceptionYear>
@@ -19,7 +19,6 @@
     <scala.version>2.9.1</scala.version>
     <scala.plugin.version>3.1.0</scala.plugin.version>
     <tika-version>1.0</tika-version>
-    <slf4j.version>1.7.32</slf4j.version>
   </properties>
 
   <repositories>
@@ -105,8 +104,8 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.5.6</version>
     </dependency>
 
     <!-- Scala -->
@@ -134,12 +133,6 @@
       <groupId>org.specs2</groupId>
       <artifactId>specs2_${scala.version}</artifactId>
       <version>1.12.4</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>${slf4j.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -272,6 +265,7 @@
               <artifactSet>
                 <includes>
                   <include>org.jboss.netty</include>
+                  <include>log4j</include>
                   <include>org.apache.lucene:lucene-queryparser</include>
                 </includes>
               </artifactSet>
@@ -281,6 +275,12 @@
                   <excludes>
                     <exclude>org/jboss/netty/channel/socket/http/</exclude>
                     <exclude>org/jboss/netty/handler/codec/http/</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>log4j</artifact>
+                  <excludes>
+                    <exclude>org/apache/log4j/net/SocketServer.class</exclude>
                   </excludes>
                 </filter>
                 <filter>
